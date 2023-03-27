@@ -14,7 +14,7 @@ import {
 } from '../assets/constant';
 
 export function HomePage() {
-  const filter = ['최신순11', '좋아요순', '댓글순', '조회순'];
+  const filter = ['최신순', '좋아요순', '댓글순', '조회순'];
   const [filterName, setFilterName] = useState('최신순');
   return (
     <>
