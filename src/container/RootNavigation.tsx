@@ -7,6 +7,8 @@ import {LoginPage} from '../pages/LoginPage';
 import {SplashPage} from '../pages/SplashPage';
 import {BottomTabNavigation} from './BottomTabNavigation';
 import {SignUpPage} from '../pages/SignUpPage';
+import {DetailPage} from '../pages/DetailPage';
+import {gray4} from '../assets/constant';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +25,22 @@ function RootNavigation() {
         <Stack.Screen name="SplashPage" component={SplashPage} />
         <Stack.Screen name="LoginPage" component={LoginPage} />
         <Stack.Screen name="SinUpPage" component={SignUpPage} />
+        <Stack.Screen
+          name="DetailPage"
+          component={DetailPage}
+          options={{
+            title: 'DetailPage',
+            headerShown: true,
+            headerStyle: {
+              backgroundColor: gray4,
+            },
+            headerTintColor: 'white',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+              fontSize: 20,
+            },
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
