@@ -1,4 +1,4 @@
-interface Iparticipant {
+export interface Iparticipant {
   nickname: string;
   profileImg: string;
 }
@@ -18,4 +18,14 @@ export interface ICompleteSample {
   reported: boolean;
   participantResponseDtoList: Iparticipant[];
   participantCount: number;
+  commentCount: string;
+}
+
+export interface ICommentData {
+  comment: string;
+  commentId: number;
+  modifiedAtAt: string;
+  nickname: string;
+  profileImg: string | null;
+  username: string;
 }

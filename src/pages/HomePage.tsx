@@ -1,8 +1,10 @@
 import {useNavigation} from '@react-navigation/native';
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
 import {
+  ActivityIndicator,
+  FlatList,
   Image,
   Pressable,
   ScrollView,
@@ -21,24 +23,42 @@ import {
   gray8,
   REM,
 } from '../assets/constant';
+import {DataList} from '../components/DataList';
 import {getCompleteData} from '../store/API';
 import {serveData} from '../store/atom/data';
 import {ICompleteSample} from '../store/data/complete';
 import {DetailPage} from './DetailPage';
+import Icon from 'react-native-vector-icons/AntDesign';
 
 export function HomePage() {
   const filter = ['최신순', '좋아요순', '댓글순', '조회순'];
   const [filterName, setFilterName] = useState('최신순');
+  const [filterNumber, setFilterNumber] = useState(1);
   const [recoilData, setRecoilData] = useRecoilState(serveData);
-  const [data, setData] = useState<ICompleteSample[]>();
-  const navigation = useNavigation();
+  const [list, setList] = useState<ICompleteSample[]>([]);
+  const [page, setPage] = useState(0);
+  const [showArrow, setShowArrow] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const flatRef = useRef(null);
 
-  async function getData() {
+  const loadMoreData = async () => {
+    setPage(page => page + 1);
+    await getData({
+      status: filterNumber,
+      page: page,
+    });
+  };
+  async function getData({status, page}) {
     try {
-      const {data} = await getCompleteData();
+      const {data} = await getCompleteData({status, page});
       if (!!data) {
-        setData(data.data.content);
-        setRecoilData(data.data.content);
+        if (page === 0) {
+          setLoading(true);
+          setList(data.data.content);
+          // setRecoilData(data.data.content);
+        } else {
+          setList([...list, ...data.data.content]);
+        }
       }
     } catch (error) {
       console.warn('error', error);
@@ -46,8 +66,16 @@ export function HomePage() {
   }
 
   useEffect(() => {
-    getData();
+    getData({
+      status: filterNumber,
+      page: page,
+    });
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterNumber]);
+
   return (
     <>
       <View style={{flex: 1}}>
@@ -66,11 +94,12 @@ export function HomePage() {
             padding: 10 * REM,
           }}>
           {filter.map((value, i) => {
-            console.log(filter.length, i);
             return (
               <Pressable
                 onPress={() => {
                   setFilterName(value);
+                  setFilterNumber(i + 1);
+                  getData({status: i + 1, page: 0});
                 }}>
                 <View
                   key={i}
@@ -92,57 +121,56 @@ export function HomePage() {
             );
           })}
         </View>
-        <ScrollView>
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              padding: 10 * REM,
-              justifyContent: 'center',
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          {loading ? (
+            <FlatList
+              data={list}
+              ref={flatRef}
+              style={{
+                padding: 10 * REM,
+              }}
+              keyExtractor={_ => _.date}
+              numColumns={2}
+              renderItem={item => {
+                return <DataList data={item.item} />;
+              }}
+              onEndReached={loadMoreData}
+              onEndReachedThreshold={0.1}
+              onScroll={event => {
+                const offsetY = event.nativeEvent.contentOffset.y;
+                if (offsetY > 0 && !showArrow) {
+                  setShowArrow(true);
+                } else if (offsetY === 0 && showArrow) {
+                  setShowArrow(false);
+                }
+              }}
+            />
+          ) : (
+            <ActivityIndicator size="large" />
+          )}
+        </View>
+        {showArrow && (
+          <Pressable
+            style={{position: 'absolute', right: 10, bottom: 30}}
+            onPress={() => {
+              flatRef?.current.scrollToOffset({
+                animated: true,
+                offset: 0,
+              });
             }}>
-            {(data || []).map(value => (
-              <View
-                style={{
-                  padding: 20 * REM,
-                }}>
-                <Pressable
-                  onPress={() =>
-                    navigation.navigate('DetailPage', {data: value})
-                  }>
-                  <Image
-                    style={{
-                      width: 120 * REM,
-                      height: 120 * REM,
-                    }}
-                    source={{uri: value.gifUrl}}
-                  />
-                </Pressable>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingTop: 10 * REM,
-                  }}>
-                  <Image
-                    style={{
-                      width: 30 * REM,
-                      height: 30 * REM,
-                      borderRadius: 30 * REM,
-                      backgroundColor: gray4,
-                    }}
-                    source={{uri: value.profileImg}}
-                  />
-                  {console.log(value.nickname.length)}
-                  <Text style={{marginLeft: 10 * REM}}>
-                    {value.nickname.length > 8
-                      ? value.nickname.slice(0, 8)
-                      : value.nickname}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+            <View
+              style={{
+                width: 30 * REM,
+                height: 30 * REM,
+                borderRadius: 30 * REM,
+                backgroundColor: black,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <Icon name="arrowup" size={20} color="white" />
+            </View>
+          </Pressable>
+        )}
       </View>
     </>
   );
